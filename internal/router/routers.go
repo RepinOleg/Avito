@@ -1,7 +1,6 @@
-package routers
+package router
 
 import (
-	"fmt"
 	"github.com/RepinOleg/Banner_service/internal/handlers"
 	"github.com/RepinOleg/Banner_service/internal/middleware"
 	"net/http"
@@ -36,17 +35,7 @@ func NewRouter() *mux.Router {
 	return router
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello World!")
-}
-
 var routes = Routes{
-	Route{
-		"Index",
-		"GET",
-		"/",
-		Index,
-	},
 
 	Route{
 		"BannerGet",
@@ -59,14 +48,14 @@ var routes = Routes{
 		"BannerIdDelete",
 		strings.ToUpper("Delete"),
 		"/banner/{id}",
-		handlers.BannerIdDelete,
+		handlers.BannerIDDelete,
 	},
 
 	Route{
 		"BannerIdPatch",
 		strings.ToUpper("Patch"),
 		"/banner/{id}",
-		handlers.BannerIdPatch,
+		handlers.BannerIDPatch,
 	},
 
 	Route{

@@ -1,11 +1,11 @@
-package models
+package model
 
 type BannerBody struct {
 	// Идентификатор фичи
-	FeatureId int32 `json:"feature_id,omitempty"`
+	FeatureID int32 `json:"feature_id,omitempty"`
 
 	// Идентификаторы тэгов
-	TagIds []int32 `json:"tag_ids,omitempty"`
+	TagIDs []int32 `json:"tag_ids,omitempty"`
 
 	// Содержимое баннера
 	Content BannerContent `json:"content,omitempty"`
