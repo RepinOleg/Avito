@@ -1,6 +1,7 @@
 package responses
 
 import (
+	"github.com/RepinOleg/Banner_service/internal/models"
 	"time"
 )
 
@@ -12,7 +13,7 @@ type Response200 struct {
 	// Идентификатор фичи
 	FeatureId int32 `json:"feature_id,omitempty"`
 	// Содержимое баннера
-	Content ModelMap `json:"content,omitempty"`
+	Content models.BannerContent `json:"content,omitempty"`
 	// Флаг активности баннера
 	IsActive bool `json:"is_active,omitempty"`
 	// Дата создания баннера
