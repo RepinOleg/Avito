@@ -1,6 +1,6 @@
-package swagger
+package responses
 
-type InlineResponse201 struct {
+type Response201 struct {
 	// Идентификатор созданного баннера
 	BannerId int32 `json:"banner_id,omitempty"`
 }

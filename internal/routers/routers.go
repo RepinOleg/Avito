@@ -1,7 +1,9 @@
-package swagger
+package routers
 
 import (
 	"fmt"
+	"github.com/RepinOleg/Banner_service/internal/handlers"
+	"github.com/RepinOleg/Banner_service/internal/middleware"
 	"net/http"
 	"strings"
 
@@ -22,7 +24,7 @@ func NewRouter() *mux.Router {
 	for _, route := range routes {
 		var handler http.Handler
 		handler = route.HandlerFunc
-		handler = Logger(handler, route.Name)
+		handler = middleware.Logger(handler, route.Name)
 
 		router.
 			Methods(route.Method).
@@ -50,34 +52,34 @@ var routes = Routes{
 		"BannerGet",
 		strings.ToUpper("Get"),
 		"/banner",
-		BannerGet,
+		handlers.BannerGet,
 	},
 
 	Route{
 		"BannerIdDelete",
 		strings.ToUpper("Delete"),
 		"/banner/{id}",
-		BannerIdDelete,
+		handlers.BannerIdDelete,
 	},
 
 	Route{
 		"BannerIdPatch",
 		strings.ToUpper("Patch"),
 		"/banner/{id}",
-		BannerIdPatch,
+		handlers.BannerIdPatch,
 	},
 
 	Route{
 		"BannerPost",
 		strings.ToUpper("Post"),
 		"/banner",
-		BannerPost,
+		handlers.BannerPost,
 	},
 
 	Route{
 		"UserBannerGet",
 		strings.ToUpper("Get"),
 		"/user_banner",
-		UserBannerGet,
+		handlers.UserBannerGet,
 	},
 }

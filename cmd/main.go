@@ -1,10 +1,9 @@
 package main
 
 import (
+	sw "github.com/RepinOleg/Banner_service/internal/routers"
 	"log"
 	"net/http"
-
-	sw "github.com/RepinOleg/Banner_service/go"
 )
 
 func main() {

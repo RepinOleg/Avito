@@ -1,6 +1,6 @@
-package swagger
+package models
 
-type BannerBody struct {
+type BannerIdBody struct {
 	// Идентификаторы тэгов
 	TagIds []int32 `json:"tag_ids,omitempty"`
 	// Идентификатор фичи

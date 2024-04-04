@@ -1,10 +1,10 @@
-package swagger
+package responses
 
 import (
 	"time"
 )
 
-type InlineResponse200 struct {
+type Response200 struct {
 	// Идентификатор баннера
 	BannerId int32 `json:"banner_id,omitempty"`
 	// Идентификаторы тэгов
