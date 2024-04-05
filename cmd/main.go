@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/RepinOleg/Banner_service/internal/dbs"
 	"github.com/RepinOleg/Banner_service/internal/handler"
 	sw "github.com/RepinOleg/Banner_service/internal/router"
@@ -17,7 +16,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer connect.Close()
-	fmt.Println("Успешно подключено")
 	handlers := handler.NewHandler(connect)
 	log.Printf("Server started")
 
