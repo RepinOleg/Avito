@@ -10,6 +10,7 @@
 *.jar
 *.idea
 .swagger-codegen
+pg_data
 
 # Test binary, built with `go test -c`
 *.test
