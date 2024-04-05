@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/RepinOleg/Banner_service/internal/handlers"
+	"github.com/RepinOleg/Banner_service/internal/handler"
 	"github.com/RepinOleg/Banner_service/internal/middleware"
 	"net/http"
 	"strings"
@@ -10,26 +10,41 @@ import (
 )
 
 type Route struct {
-	Name        string
-	Method      string
-	Pattern     string
-	HandlerFunc http.HandlerFunc
+	Name    string
+	Method  string
+	Pattern string
 }
 
 type Routes []Route
 
-func NewRouter() *mux.Router {
+func NewRouter(handlers *handler.Handler) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
+
 	for _, route := range routes {
-		var handler http.Handler
-		handler = route.HandlerFunc
-		handler = middleware.Logger(handler, route.Name)
+		var handlerFunc http.HandlerFunc
+
+		switch route.Name {
+		case "BannerGet":
+			handlerFunc = handlers.BannerGet
+		case "BannerIdDelete":
+			handlerFunc = handlers.BannerIDDelete
+		case "BannerIdPatch":
+			handlerFunc = handlers.BannerIDPatch
+		case "BannerPost":
+			handlerFunc = handlers.BannerPost
+		case "UserBannerGet":
+			handlerFunc = handlers.UserBannerGet
+		}
+
+		var resHandler http.Handler
+		resHandler = handlerFunc
+		resHandler = middleware.Logger(resHandler, route.Name)
 
 		router.
 			Methods(route.Method).
 			Path(route.Pattern).
 			Name(route.Name).
-			Handler(handler)
+			Handler(resHandler)
 	}
 
 	return router
@@ -41,34 +56,29 @@ var routes = Routes{
 		"BannerGet",
 		strings.ToUpper("Get"),
 		"/banner",
-		handlers.BannerGet,
 	},
 
 	Route{
 		"BannerIdDelete",
 		strings.ToUpper("Delete"),
 		"/banner/{id}",
-		handlers.BannerIDDelete,
 	},
 
 	Route{
 		"BannerIdPatch",
 		strings.ToUpper("Patch"),
 		"/banner/{id}",
-		handlers.BannerIDPatch,
 	},
 
 	Route{
 		"BannerPost",
 		strings.ToUpper("Post"),
 		"/banner",
-		handlers.BannerPost,
 	},
 
 	Route{
 		"UserBannerGet",
 		strings.ToUpper("Get"),
 		"/user_banner",
-		handlers.UserBannerGet,
 	},
 }

@@ -1,35 +1,40 @@
-package handlers
+package handler
 
 import (
 	"github.com/jmoiron/sqlx"
 	"net/http"
 )
 
-type DBHandler struct {
-	DB *sqlx.DB
+type Handler struct {
+	db *sqlx.DB
 }
 
-func BannerGet(w http.ResponseWriter, r *http.Request) {
+func NewHandler(db *sqlx.DB) *Handler {
+	return &Handler{db: db}
+}
+
+func (h *Handler) BannerGet(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+}
+
+func (h *Handler) BannerIDDelete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func BannerIDDelete(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) BannerIDPatch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func BannerIDPatch(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) BannerPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func BannerPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-}
-
-func UserBannerGet(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UserBannerGet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
