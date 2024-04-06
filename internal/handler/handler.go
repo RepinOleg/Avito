@@ -61,13 +61,6 @@ func (h *Handler) BannerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			response.HandleError(w, "Database transaction failed", http.StatusInternalServerError)
-		}
-	}()
-
 	// Вставка в таблицу feature
 	_, err = tx.Exec("INSERT INTO feature (feature_id) VALUES ($1) ON CONFLICT DO NOTHING", banner.FeatureID)
 	if err != nil {
