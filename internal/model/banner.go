@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type BannerBody struct {
 	// Идентификаторы тэгов
 	TagIDs []int64 `json:"tag_ids,omitempty"`
@@ -12,6 +14,12 @@ type BannerBody struct {
 
 	// Флаг активности баннера
 	IsActive bool `json:"is_active,omitempty"`
+
+	CreatedAt time.Time
+
+	UpdatedAt time.Time
+
+	Expiration int64
 }
 
 type BannerContent struct {

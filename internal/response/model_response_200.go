@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-type Response200 struct {
+type ModelResponse200 struct {
 	// Идентификатор баннера
-	BannerID int32 `json:"banner_id,omitempty"`
+	BannerID int64 `json:"banner_id,omitempty"`
 	// Идентификаторы тэгов
-	TagIDs []int32 `json:"tag_ids,omitempty"`
+	TagIDs []int64 `json:"tag_ids,omitempty"`
 	// Идентификатор фичи
-	FeatureID int32 `json:"feature_id,omitempty"`
+	FeatureID int64 `json:"feature_id,omitempty"`
 	// Содержимое баннера
 	Content model.BannerContent `json:"content,omitempty"`
 	// Флаг активности баннера

@@ -1,6 +1,6 @@
 package response
 
-type Response201 struct {
+type ModelResponse201 struct {
 	// Идентификатор созданного баннера
-	BannerID int32 `json:"banner_id,omitempty"`
+	BannerID int64 `json:"banner_id,omitempty"`
 }
