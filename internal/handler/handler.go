@@ -69,7 +69,7 @@ func (h *Handler) BannerPost(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Вставка в таблицу feature
-	_, err = tx.Exec("INSERT INTO feature (feature_id) VALUES ($1)", banner.FeatureID)
+	_, err = tx.Exec("INSERT INTO feature (feature_id) VALUES ($1) ON CONFLICT DO NOTHING", banner.FeatureID)
 	if err != nil {
 		tx.Rollback()
 		response.HandleError(w, fmt.Sprintf("Error inserting to database feature: %s", err.Error()), http.StatusInternalServerError)
@@ -108,7 +108,7 @@ func (h *Handler) BannerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response201 := response.ModelResponse201{BannerID: bannerID}
-	jsonResponse, err := json.Marshal(response201)
+	jsonResponse, err := json.MarshalIndent(response201, "", "\t")
 	if err != nil {
 		response.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -133,7 +133,7 @@ func (h *Handler) UserBannerGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) AddTag(tx *sql.Tx, tag int64) error {
-	_, err := tx.Exec("INSERT INTO tag (tag_id) VALUES ($1)", tag)
+	_, err := tx.Exec("INSERT INTO tag (tag_id) VALUES ($1) ON CONFLICT DO NOTHING", tag)
 	return err
 }
 
