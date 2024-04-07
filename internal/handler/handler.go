@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/RepinOleg/Banner_service/internal/memorycache"
 	"github.com/RepinOleg/Banner_service/internal/model"
 	"github.com/RepinOleg/Banner_service/internal/repository"
@@ -38,14 +39,35 @@ func (h *Handler) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tagID := getOptionalInt64(r.FormValue("tag_id"), 0)
-	featureID := getOptionalInt64(r.FormValue("feature_id"), 0)
-	limit := getOptionalInt64(r.FormValue("limit"), 10)
-	offset := getOptionalInt64(r.FormValue("offset"), 0)
+	tagID, err := getOptionalInt64(r.FormValue("tag_id"), 0)
+	if err != nil {
+		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	featureID, err := getOptionalInt64(r.FormValue("feature_id"), 0)
+	if err != nil {
+		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	limit, err := getOptionalInt64(r.FormValue("limit"), 10)
+	if err != nil {
+		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	offset, err := getOptionalInt64(r.FormValue("offset"), 0)
+	if err != nil {
+		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	banners, err := h.db.GetAllBanners(tagID, featureID, limit, offset)
 	if err != nil {
 		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if len(banners) == 0 {
+		http.Error(w, "баннер не найден", http.StatusNotFound)
 		return
 	}
 
@@ -105,7 +127,6 @@ func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
 		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	//token := r.Header.Get("token")
 	banner, err := readBody(r)
 
 	ok, err := h.db.PatchBanner(bannerID, banner)
@@ -175,6 +196,7 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO сделать этот параметр необязательным
 	lastVersionStr := r.FormValue("use_last_revision")
 	lastVersion, err := strconv.ParseBool(lastVersionStr)
 	if err != nil {
@@ -231,14 +253,16 @@ func readBody(r *http.Request) (model.BannerBody, error) {
 	return banner, nil
 }
 
-func getOptionalInt64(value string, defaultValue int64) int64 {
+func getOptionalInt64(value string, defaultValue int64) (int64, error) {
 	if value == "" {
-		return defaultValue
+		return defaultValue, nil
 	}
 	num, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		log.Println(err.Error())
-		return defaultValue
+		return 0, err
 	}
-	return num
+	if num < 0 {
+		return 0, fmt.Errorf("value must be greater than or equal to 0")
+	}
+	return num, nil
 }
