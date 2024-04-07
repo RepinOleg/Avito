@@ -55,23 +55,31 @@ func (h *Handler) DeleteBannerID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	bannerIDStr := params["id"]
+	bannerID, err := strconv.ParseInt(bannerIDStr, 10, 64)
+	if err != nil {
+		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	//token := r.Header.Get("token")
+	banner, err := readBody(r)
+
+	ok, err := h.db.PatchBanner(bannerID, banner)
+	if err != nil {
+		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		response.HandleError(w, "banner not found", http.StatusNotFound)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) PostBanner(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		response.HandleErrorJson(w, "Error reading request body", http.StatusInternalServerError)
-		return
-	}
-
-	var banner model.BannerBody
-	err = json.Unmarshal(body, &banner)
-	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	banner, err := readBody(r)
 
 	bannerID, err := h.db.AddBanner(banner)
 	if err != nil {
@@ -145,4 +153,18 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func readBody(r *http.Request) (model.BannerBody, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return model.BannerBody{}, err
+	}
+
+	var banner model.BannerBody
+	err = json.Unmarshal(body, &banner)
+	if err != nil {
+		return model.BannerBody{}, err
+	}
+	return banner, nil
 }

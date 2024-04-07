@@ -16,7 +16,9 @@ func NewRepository(db *sqlx.DB) *Repository {
 
 func (r *Repository) GetBanner(tagID, featureID int64) ([]model.BannerContent, error) {
 	var banners []model.BannerContent
-	rows, err := r.db.Query("select content_title, content_text, content_url from banner b JOIN banner_tag bt ON b.banner_id=bt.banner_id WHERE feature_id = ($1) AND tag_id=($2);", featureID, tagID)
+	rows, err := r.db.Query("select content_title, content_text, content_url from banner b"+
+		" JOIN banner_tag bt ON b.banner_id=bt.banner_id"+
+		" WHERE feature_id = ($1) AND tag_id=($2);", featureID, tagID)
 	if err != nil {
 		return nil, err
 	}
@@ -120,4 +122,37 @@ func (r *Repository) DeleteBanner(id int64) (bool, error) {
 	}
 
 	return deleted, nil
+}
+
+func (r *Repository) PatchBanner(id int64, banner model.BannerBody) (bool, error) {
+	var (
+		content = banner.Content
+		updated bool
+	)
+
+	for _, tagID := range banner.TagIDs {
+		result, err := r.db.Exec("UPDATE banner b "+
+			"SET content_title = $1, content_text = $2, content_url = $3 "+
+			"FROM banner_tag bt "+
+			"WHERE b.banner_id = bt.banner_id "+
+			"AND b.feature_id = $4 "+
+			"AND bt.tag_id = $5 "+
+			"AND b.banner_id = $6",
+			content.Title, content.Text, content.URL, banner.FeatureID, tagID, id)
+
+		if err != nil {
+			return false, err
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return false, err
+		}
+
+		if rowsAffected > 0 {
+			updated = true
+		}
+	}
+
+	return updated, nil
 }
