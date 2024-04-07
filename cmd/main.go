@@ -21,8 +21,8 @@ func main() {
 	defer connect.Close()
 
 	cache := memorycache.New(5*time.Minute, 10*time.Minute)
-
-	handlers := handler.NewHandler(connect, cache)
+	repository := dbs.NewRepository(connect)
+	handlers := handler.NewHandler(repository, cache)
 	log.Printf("Server started")
 
 	router := sw.NewRouter(handlers)

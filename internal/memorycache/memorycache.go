@@ -50,29 +50,24 @@ func (c *Cache) Set(id int64, item model.BannerBody, duration time.Duration) {
 	c.banners[id] = item
 }
 
-func (c *Cache) Get(id int64) (*model.BannerBody, bool) {
+func (c *Cache) GetBanner(tagID, featureID int64) ([]model.BannerContent, error) {
 	c.RLock()
 
 	defer c.RUnlock()
-
-	item, found := c.banners[id]
-
-	// ключ не найден
-	if !found {
-		return nil, false
-	}
-
-	// Проверка на установку времени истечения, в противном случае он бессрочный
-	if item.Expiration > 0 {
-
-		// Если в момент запроса кеш устарел возвращаем nil
-		if time.Now().UnixNano() > item.Expiration {
-			return nil, false
+	var banners []model.BannerContent
+	for _, banner := range c.banners {
+		if banner.FeatureID == featureID {
+			for _, tag := range banner.TagIDs {
+				if tag == tagID {
+					if banner.Expiration < 0 || time.Now().UnixNano() < banner.Expiration {
+						banners = append(banners, banner.Content)
+					}
+				}
+			}
 		}
-
 	}
 
-	return &item, true
+	return banners, nil
 }
 
 func (c *Cache) Delete(id int64) error {
