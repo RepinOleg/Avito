@@ -130,29 +130,21 @@ func (r *Repository) PatchBanner(id int64, banner model.BannerBody) (bool, error
 		updated bool
 	)
 
-	for _, tagID := range banner.TagIDs {
-		result, err := r.db.Exec("UPDATE banner b "+
-			"SET content_title = $1, content_text = $2, content_url = $3 "+
-			"FROM banner_tag bt "+
-			"WHERE b.banner_id = bt.banner_id "+
-			"AND b.feature_id = $4 "+
-			"AND bt.tag_id = $5 "+
-			"AND b.banner_id = $6",
-			content.Title, content.Text, content.URL, banner.FeatureID, tagID, id)
-
-		if err != nil {
-			return false, err
-		}
-
-		rowsAffected, err := result.RowsAffected()
-		if err != nil {
-			return false, err
-		}
-
-		if rowsAffected > 0 {
-			updated = true
-		}
+	result, err := r.db.Exec("UPDATE banner"+
+		"SET content_title = $1, content_text = $2, content_url = $3 "+
+		"WHERE banner_id = $1 ",
+		content.Title, content.Text, content.URL, id)
+	if err != nil {
+		return false, err
 	}
 
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	if rowsAffected > 0 {
+		updated = true
+	}
 	return updated, nil
 }
