@@ -50,12 +50,16 @@ func (c *Cache) Set(id int64, item model.BannerBody, duration time.Duration) {
 	c.banners[id] = item
 }
 
-func (c *Cache) GetBanner(tagID, featureID int64) ([]model.BannerContent, error) {
+func (c *Cache) GetBanner(tagID, featureID int64, token string) ([]model.BannerContent, error) {
 	c.RLock()
 
 	defer c.RUnlock()
 	var banners []model.BannerContent
 	for _, banner := range c.banners {
+		if !banner.IsActive && token != "admin_token" {
+			continue
+		}
+
 		if banner.FeatureID == featureID {
 			for _, tag := range banner.TagIDs {
 				if tag == tagID {

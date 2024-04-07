@@ -1,9 +1,11 @@
-package dbs
+package repository
 
 import (
 	"fmt"
 	"github.com/RepinOleg/Banner_service/internal/model"
+	"github.com/RepinOleg/Banner_service/internal/response"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type Repository struct {
@@ -14,9 +16,55 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) GetBanner(tagID, featureID int64) ([]model.BannerContent, error) {
+func (r *Repository) GetAllBanners(tagID, featureID, limit, offset int64) ([]response.ModelResponse200, error) {
+	var banners []response.ModelResponse200
+
+	query := `SELECT b.banner_id, b.feature_id, b.content_title, b.content_text, b.content_url, b.is_active, b.created_at, b.updated_at, ARRAY_AGG(bt.tag_id) AS tag_ids
+              FROM banner b
+              LEFT JOIN banner_tag bt ON b.banner_id = bt.banner_id
+              WHERE 1=1
+              GROUP BY b.banner_id`
+
+	var args []interface{}
+
+	if tagID != 0 {
+		query += " AND bt.tag_id IN (?)"
+		args = append(args, tagID)
+	}
+
+	if featureID != 0 {
+		query += " AND b.feature_id = ?"
+		args = append(args, featureID)
+	}
+
+	query += " ORDER BY b.created_at DESC LIMIT $1 OFFSET $2"
+
+	args = append(args, limit, offset)
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			banner response.ModelResponse200
+			tagIDs []int64
+		)
+		err = rows.Scan(&banner.BannerID, &banner.FeatureID, &banner.Content.Title, &banner.Content.Text, &banner.Content.URL, &banner.IsActive, &banner.CreatedAt, &banner.UpdatedAt, pq.Array(&tagIDs))
+		if err != nil {
+			return nil, err
+		}
+		banner.TagIDs = tagIDs
+		banners = append(banners, banner)
+	}
+
+	return banners, nil
+}
+
+func (r *Repository) GetBanner(tagID, featureID int64, token string) ([]model.BannerContent, error) {
 	var banners []model.BannerContent
-	rows, err := r.db.Query("select content_title, content_text, content_url from banner b"+
+	rows, err := r.db.Query("select content_title, content_text, content_url, is_active from banner b"+
 		" JOIN banner_tag bt ON b.banner_id=bt.banner_id"+
 		" WHERE feature_id = ($1) AND tag_id=($2);", featureID, tagID)
 	if err != nil {
@@ -24,13 +72,15 @@ func (r *Repository) GetBanner(tagID, featureID int64) ([]model.BannerContent, e
 	}
 	for rows.Next() {
 		var banner model.BannerContent
-
-		if err = rows.Scan(&banner.Title, &banner.Text, &banner.URL); err != nil {
+		var isActive bool
+		if err = rows.Scan(&banner.Title, &banner.Text, &banner.URL, &isActive); err != nil {
 			return nil, err
 		}
-
-		banners = append(banners, banner)
+		if token == "admin_token" || token == "user_token" && isActive {
+			banners = append(banners, banner)
+		}
 	}
+
 	return banners, nil
 }
 

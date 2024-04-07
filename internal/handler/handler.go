@@ -2,9 +2,9 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/RepinOleg/Banner_service/internal/dbs"
 	"github.com/RepinOleg/Banner_service/internal/memorycache"
 	"github.com/RepinOleg/Banner_service/internal/model"
+	"github.com/RepinOleg/Banner_service/internal/repository"
 	"github.com/RepinOleg/Banner_service/internal/response"
 	"github.com/gorilla/mux"
 	"io"
@@ -15,11 +15,11 @@ import (
 )
 
 type Handler struct {
-	db    *dbs.Repository
+	db    *repository.Repository
 	cache *memorycache.Cache
 }
 
-func NewHandler(db *dbs.Repository, cache *memorycache.Cache) *Handler {
+func NewHandler(db *repository.Repository, cache *memorycache.Cache) *Handler {
 	return &Handler{
 		db:    db,
 		cache: cache,
@@ -27,12 +27,50 @@ func NewHandler(db *dbs.Repository, cache *memorycache.Cache) *Handler {
 }
 
 func (h *Handler) GetAllBanners(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("token")
+	if token == "" {
+		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
+		return
+	}
+
+	if token != "admin_token" {
+		http.Error(w, "Пользователь не имеет доступа", http.StatusForbidden)
+		return
+	}
+
+	tagID := getOptionalInt64(r.FormValue("tag_id"), 0)
+	featureID := getOptionalInt64(r.FormValue("feature_id"), 0)
+	limit := getOptionalInt64(r.FormValue("limit"), 10)
+	offset := getOptionalInt64(r.FormValue("offset"), 0)
+
+	banners, err := h.db.GetAllBanners(tagID, featureID, limit, offset)
+	if err != nil {
+		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse, err := json.MarshalIndent(banners, "", "\t")
+	if err != nil {
+		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(jsonResponse)
+	if err != nil {
+		log.Println(err)
+	}
 
 }
 
 func (h *Handler) DeleteBannerID(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("token")
+	if token != "admin_token" {
+		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
+		return
+	}
+
 	params := mux.Vars(r)
 	bannerIDStr := params["id"]
 	bannerID, err := strconv.ParseInt(bannerIDStr, 10, 64)
@@ -55,6 +93,11 @@ func (h *Handler) DeleteBannerID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("token")
+	if token != "admin_token" {
+		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
+		return
+	}
 	params := mux.Vars(r)
 	bannerIDStr := params["id"]
 	bannerID, err := strconv.ParseInt(bannerIDStr, 10, 64)
@@ -79,6 +122,11 @@ func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PostBanner(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("token")
+	if token != "admin_token" {
+		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
+		return
+	}
 	banner, err := readBody(r)
 
 	bannerID, err := h.db.AddBanner(banner)
@@ -107,6 +155,12 @@ func (h *Handler) PostBanner(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("token")
+	if token == "" || token != "admin_token" && token != "user_token" {
+		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
+		return
+	}
+
 	tagIDStr := r.FormValue("tag_id")
 	tagID, err := strconv.ParseInt(tagIDStr, 10, 64)
 	if err != nil {
@@ -127,20 +181,28 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 		response.HandleErrorJson(w, "Wrong parameter use_last_version", http.StatusBadRequest)
 		return
 	}
+
 	var content []model.BannerContent
 	if lastVersion {
-		content, err = h.db.GetBanner(tagID, featureID)
+		// TODO подумать как сделать 403 статус ответа, что пользователь не имеет доступа
+		content, err = h.db.GetBanner(tagID, featureID, token)
 		if err != nil {
 			response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
-		content, err = h.cache.GetBanner(tagID, featureID)
+		content, err = h.cache.GetBanner(tagID, featureID, token)
 		if err != nil {
 			response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
+
+	if len(content) == 0 {
+		http.Error(w, "баннер не найден", http.StatusNotFound)
+		return
+	}
+
 	jsonResponse, err := json.MarshalIndent(content, "", "\t")
 	if err != nil {
 		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
@@ -167,4 +229,16 @@ func readBody(r *http.Request) (model.BannerBody, error) {
 		return model.BannerBody{}, err
 	}
 	return banner, nil
+}
+
+func getOptionalInt64(value string, defaultValue int64) int64 {
+	if value == "" {
+		return defaultValue
+	}
+	num, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		log.Println(err.Error())
+		return defaultValue
+	}
+	return num
 }

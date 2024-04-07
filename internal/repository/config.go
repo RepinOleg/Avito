@@ -1,4 +1,4 @@
-package dbs
+package repository
 
 import (
 	"fmt"

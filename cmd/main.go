@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/RepinOleg/Banner_service/internal/dbs"
 	"github.com/RepinOleg/Banner_service/internal/handler"
 	"github.com/RepinOleg/Banner_service/internal/memorycache"
+	"github.com/RepinOleg/Banner_service/internal/repository"
 	sw "github.com/RepinOleg/Banner_service/internal/router"
 	_ "github.com/lib/pq"
 	"log"
@@ -12,17 +12,17 @@ import (
 )
 
 func main() {
-	cfg := dbs.LoadDBConfig()
+	cfg := repository.LoadDBConfig()
 
-	connect, err := dbs.NewDB(cfg)
+	connect, err := repository.NewDB(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer connect.Close()
 
 	cache := memorycache.New(5*time.Minute, 10*time.Minute)
-	repository := dbs.NewRepository(connect)
-	handlers := handler.NewHandler(repository, cache)
+	repo := repository.NewRepository(connect)
+	handlers := handler.NewHandler(repo, cache)
 	log.Printf("Server started")
 
 	router := sw.NewRouter(handlers)

@@ -13,6 +13,8 @@ CREATE TABLE banner (
     content_text TEXT,
     content_url TEXT,
     is_active BOOLEAN,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (feature_id) REFERENCES Feature(feature_id)
 );
 
