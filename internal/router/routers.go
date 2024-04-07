@@ -24,16 +24,16 @@ func NewRouter(handlers *handler.Handler) *mux.Router {
 		var handlerFunc http.HandlerFunc
 
 		switch route.Name {
-		case "BannerGet":
-			handlerFunc = handlers.BannerGet
-		case "BannerIdDelete":
-			handlerFunc = handlers.BannerIDDelete
-		case "BannerIdPatch":
-			handlerFunc = handlers.BannerIDPatch
-		case "BannerPost":
-			handlerFunc = handlers.BannerPost
-		case "UserBannerGet":
-			handlerFunc = handlers.UserBannerGet
+		case "GetAllBanners":
+			handlerFunc = handlers.GetAllBanners
+		case "DeleteBannerId":
+			handlerFunc = handlers.DeleteBannerID
+		case "PatchBannerId":
+			handlerFunc = handlers.PatchBannerID
+		case "PostBanner":
+			handlerFunc = handlers.PostBanner
+		case "GetUserBanner":
+			handlerFunc = handlers.GetUserBanner
 		}
 
 		var resHandler http.Handler
@@ -53,31 +53,31 @@ func NewRouter(handlers *handler.Handler) *mux.Router {
 var routes = Routes{
 
 	Route{
-		"BannerGet",
+		"GetAllBanners",
 		strings.ToUpper("Get"),
 		"/banner",
 	},
 
 	Route{
-		"BannerIdDelete",
+		"DeleteBannerId",
 		strings.ToUpper("Delete"),
 		"/banner/{id}",
 	},
 
 	Route{
-		"BannerIdPatch",
+		"PatchBannerId",
 		strings.ToUpper("Patch"),
 		"/banner/{id}",
 	},
 
 	Route{
-		"BannerPost",
+		"PostBanner",
 		strings.ToUpper("Post"),
 		"/banner",
 	},
 
 	Route{
-		"UserBannerGet",
+		"GetUserBanner",
 		strings.ToUpper("Get"),
 		"/user_banner",
 	},

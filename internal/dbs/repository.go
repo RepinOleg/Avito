@@ -74,3 +74,50 @@ func (r *Repository) AddBanner(banner model.BannerBody) (int64, error) {
 	}
 	return bannerID, nil
 }
+
+func (r *Repository) DeleteBanner(id int64) (bool, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return false, err
+	}
+
+	result, err := tx.Exec("DELETE FROM banner_tag WHERE banner_id = $1", id)
+	if err != nil {
+		tx.Rollback()
+		return false, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		tx.Rollback()
+		return false, err
+	}
+
+	deleted := false
+	if rowsAffected > 0 {
+		deleted = true
+	}
+
+	result, err = tx.Exec("DELETE FROM banner WHERE banner_id = $1", id)
+	if err != nil {
+		tx.Rollback()
+		return false, err
+	}
+
+	rowsAffected, err = result.RowsAffected()
+	if err != nil {
+		tx.Rollback()
+		return false, err
+	}
+
+	if rowsAffected > 0 {
+		deleted = true
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return false, err
+	}
+
+	return deleted, nil
+}
