@@ -181,9 +181,9 @@ func (r *Repository) PatchBanner(id int64, banner model.BannerBody) (bool, error
 		updated bool
 	)
 
-	result, err := r.db.Exec("UPDATE banner"+
-		"SET content_title = $1, content_text = $2, content_url = $3 "+
-		"WHERE banner_id = $1 ",
+	result, err := r.db.Exec("UPDATE banner "+
+		"SET content_title=$1, content_text=$2, content_url=$3, updated_at=CURRENT_TIMESTAMP "+
+		"WHERE banner_id = $4",
 		content.Title, content.Text, content.URL, id)
 	if err != nil {
 		return false, err
@@ -194,7 +194,7 @@ func (r *Repository) PatchBanner(id int64, banner model.BannerBody) (bool, error
 		return false, err
 	}
 
-	if rowsAffected < 0 {
+	if rowsAffected > 0 {
 		updated = true
 	}
 	return updated, nil
