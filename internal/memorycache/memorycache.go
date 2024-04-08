@@ -66,7 +66,7 @@ func (c *Cache) GetBanner(tagID, featureID int64, token string) (*model.BannerCo
 			}
 
 			if !banner.IsActive && token == "user_token" {
-				return nil, response.AccessError{Message: "no access for user"}
+				return nil, &response.AccessError{Message: "no access for user"}
 			}
 
 			if banner.Expiration < 0 || time.Now().UnixNano() < banner.Expiration {
@@ -75,7 +75,7 @@ func (c *Cache) GetBanner(tagID, featureID int64, token string) (*model.BannerCo
 		}
 	}
 
-	return nil, response.NotFoundError{Message: "banner not found"}
+	return nil, &response.NotFoundError{Message: "banner not found"}
 }
 
 func (c *Cache) Delete(id int64) error {

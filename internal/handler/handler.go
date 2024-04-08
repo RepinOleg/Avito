@@ -65,7 +65,6 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	} else {
 		content, err = h.cache.GetBanner(tagID, featureID, token)
 	}
-
 	if err != nil {
 		response.HandleError(w, err)
 		return
@@ -166,7 +165,7 @@ func (h *Handler) DeleteBannerID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !ok {
-		response.HandleError(w, response.NotFoundError{Message: "banner not found"})
+		response.HandleError(w, &response.NotFoundError{Message: "banner not found"})
 		return
 	}
 
@@ -188,6 +187,10 @@ func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	banner, err := readBody(r)
+	if err != nil {
+		response.HandleErrorJson(w, "Неккоректные данные", http.StatusBadRequest)
+		return
+	}
 
 	ok, err := h.db.PatchBanner(bannerID, banner)
 	if err != nil {
@@ -196,7 +199,7 @@ func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !ok {
-		response.HandleError(w, response.NotFoundError{Message: "banner not found"})
+		response.HandleError(w, &response.NotFoundError{Message: "banner not found"})
 		return
 	}
 
@@ -206,11 +209,20 @@ func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) PostBanner(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("token")
-	if token != "admin_token" {
+	if token == "" {
 		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
 		return
 	}
+
+	if token != "admin_token" {
+		http.Error(w, "Пользователь не имеет доступа", http.StatusForbidden)
+		return
+	}
 	banner, err := readBody(r)
+	if err != nil {
+		response.HandleErrorJson(w, "Неккоректные данные", http.StatusBadRequest)
+		return
+	}
 
 	bannerID, err := h.db.AddBanner(banner)
 	if err != nil {
@@ -248,6 +260,7 @@ func readBody(r *http.Request) (model.BannerBody, error) {
 	if err != nil {
 		return model.BannerBody{}, err
 	}
+
 	return banner, nil
 }
 

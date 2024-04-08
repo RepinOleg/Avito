@@ -11,7 +11,7 @@ type Error struct {
 	Message string `json:"error"`
 }
 
-func (e Error) Error() string {
+func (e *Error) Error() string {
 	return e.Message
 }
 
@@ -19,7 +19,7 @@ type AccessError struct {
 	Message string `json:"error"`
 }
 
-func (e AccessError) Error() string {
+func (e *AccessError) Error() string {
 	return e.Message
 }
 
@@ -27,19 +27,24 @@ type NotFoundError struct {
 	Message string `json:"error"`
 }
 
-func (e NotFoundError) Error() string {
+func (e *NotFoundError) Error() string {
 	return e.Message
 }
 
 func HandleError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, AccessError{}):
-		HandleErrorJson(w, err.Error(), http.StatusForbidden)
-	case errors.Is(err, NotFoundError{}):
-		HandleErrorJson(w, err.Error(), http.StatusNotFound)
-	default:
-		HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+	var accessErr *AccessError
+	if errors.As(err, &accessErr) {
+		http.Error(w, "Пользователь не имеет доступа", http.StatusForbidden)
+		return
 	}
+
+	var notFoundErr *NotFoundError
+	if errors.As(err, &notFoundErr) {
+		http.Error(w, "Баннер не найден", http.StatusNotFound)
+		return
+	}
+
+	HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
 }
 
 func HandleErrorJson(w http.ResponseWriter, errorMsg string, statusCode int) {
