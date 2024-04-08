@@ -183,7 +183,7 @@ func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
 	bannerIDStr := params["id"]
 	bannerID, err := strconv.ParseInt(bannerIDStr, 10, 64)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	banner, err := readBody(r)
@@ -268,12 +268,16 @@ func getOptionalInt64(value string, defaultValue int64) (int64, error) {
 	if value == "" {
 		return defaultValue, nil
 	}
+
 	num, err := strconv.ParseInt(value, 10, 64)
+
 	if err != nil {
 		return 0, err
 	}
+
 	if num < 0 {
-		return 0, fmt.Errorf("value must be greater than or equal to 0")
+		return 0, fmt.Errorf("value must be greater than or equal to 0, value = %s", value)
 	}
+
 	return num, nil
 }

@@ -194,7 +194,7 @@ func (r *Repository) PatchBanner(id int64, banner model.BannerBody) (bool, error
 		return false, err
 	}
 
-	if rowsAffected > 0 {
+	if rowsAffected < 0 {
 		updated = true
 	}
 	return updated, nil
