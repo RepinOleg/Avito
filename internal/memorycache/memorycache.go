@@ -3,6 +3,7 @@ package memorycache
 import (
 	"errors"
 	"github.com/RepinOleg/Banner_service/internal/model"
+	"github.com/RepinOleg/Banner_service/internal/response"
 	"sync"
 	"time"
 )
@@ -50,28 +51,31 @@ func (c *Cache) Set(id int64, item model.BannerBody, duration time.Duration) {
 	c.banners[id] = item
 }
 
-func (c *Cache) GetBanner(tagID, featureID int64, token string) ([]model.BannerContent, error) {
+func (c *Cache) GetBanner(tagID, featureID int64, token string) (*model.BannerContent, error) {
 	c.RLock()
 
 	defer c.RUnlock()
-	var banners []model.BannerContent
 	for _, banner := range c.banners {
-		if !banner.IsActive && token != "admin_token" {
+		if banner.FeatureID != featureID {
 			continue
 		}
 
-		if banner.FeatureID == featureID {
-			for _, tag := range banner.TagIDs {
-				if tag == tagID {
-					if banner.Expiration < 0 || time.Now().UnixNano() < banner.Expiration {
-						banners = append(banners, banner.Content)
-					}
-				}
+		for _, tag := range banner.TagIDs {
+			if tag != tagID {
+				continue
+			}
+
+			if !banner.IsActive && token == "user_token" {
+				return nil, response.AccessError{Message: "no access for user"}
+			}
+
+			if banner.Expiration < 0 || time.Now().UnixNano() < banner.Expiration {
+				return &banner.Content, nil
 			}
 		}
 	}
 
-	return banners, nil
+	return nil, response.NotFoundError{Message: "banner not found"}
 }
 
 func (c *Cache) Delete(id int64) error {

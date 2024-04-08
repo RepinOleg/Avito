@@ -27,6 +27,64 @@ func NewHandler(db *repository.Repository, cache *memorycache.Cache) *Handler {
 	}
 }
 
+func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("token")
+	if token == "" || token != "admin_token" && token != "user_token" {
+		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
+		return
+	}
+
+	tagIDStr := r.FormValue("tag_id")
+	tagID, err := strconv.ParseInt(tagIDStr, 10, 64)
+	if err != nil {
+		response.HandleErrorJson(w, "wrong parameter tag_id or not found", http.StatusBadRequest)
+		return
+	}
+
+	featureIDStr := r.FormValue("feature_id")
+	featureID, err := strconv.ParseInt(featureIDStr, 10, 64)
+	if err != nil {
+		response.HandleErrorJson(w, "Wrong parameter feature_id or not found", http.StatusBadRequest)
+		return
+	}
+
+	lastVersionStr := r.FormValue("use_last_revision")
+	if lastVersionStr == "" {
+		lastVersionStr = "false"
+	}
+	lastVersion, err := strconv.ParseBool(lastVersionStr)
+	if err != nil {
+		response.HandleErrorJson(w, "Wrong parameter use_last_version", http.StatusBadRequest)
+		return
+	}
+
+	var content *model.BannerContent
+
+	if lastVersion {
+		content, err = h.db.GetBanner(tagID, featureID, token)
+	} else {
+		content, err = h.cache.GetBanner(tagID, featureID, token)
+	}
+
+	if err != nil {
+		response.HandleError(w, err)
+		return
+	}
+
+	jsonResponse, err := json.MarshalIndent(content, "", "\t")
+	if err != nil {
+		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(jsonResponse)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func (h *Handler) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("token")
 	if token == "" {
@@ -106,8 +164,10 @@ func (h *Handler) DeleteBannerID(w http.ResponseWriter, r *http.Request) {
 		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	if !ok {
-		response.HandleError(w, "banner not found", http.StatusNotFound)
+		response.HandleError(w, response.NotFoundError{Message: "banner not found"})
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -134,10 +194,12 @@ func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
 		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	if !ok {
-		response.HandleError(w, "banner not found", http.StatusNotFound)
+		response.HandleError(w, response.NotFoundError{Message: "banner not found"})
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
@@ -169,70 +231,6 @@ func (h *Handler) PostBanner(w http.ResponseWriter, r *http.Request) {
 	h.cache.Set(bannerID, banner, time.Minute*5)
 
 	//отправка ответа
-	_, err = w.Write(jsonResponse)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("token")
-	if token == "" || token != "admin_token" && token != "user_token" {
-		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
-		return
-	}
-
-	tagIDStr := r.FormValue("tag_id")
-	tagID, err := strconv.ParseInt(tagIDStr, 10, 64)
-	if err != nil {
-		response.HandleErrorJson(w, "Wrong parameter tag_id", http.StatusBadRequest)
-		return
-	}
-
-	featureIDStr := r.FormValue("feature_id")
-	featureID, err := strconv.ParseInt(featureIDStr, 10, 64)
-	if err != nil {
-		response.HandleErrorJson(w, "Wrong parameter feature_id", http.StatusBadRequest)
-		return
-	}
-
-	// TODO сделать этот параметр необязательным
-	lastVersionStr := r.FormValue("use_last_revision")
-	lastVersion, err := strconv.ParseBool(lastVersionStr)
-	if err != nil {
-		response.HandleErrorJson(w, "Wrong parameter use_last_version", http.StatusBadRequest)
-		return
-	}
-
-	var content []model.BannerContent
-	if lastVersion {
-		// TODO подумать как сделать 403 статус ответа, что пользователь не имеет доступа
-		content, err = h.db.GetBanner(tagID, featureID, token)
-		if err != nil {
-			response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		content, err = h.cache.GetBanner(tagID, featureID, token)
-		if err != nil {
-			response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	if len(content) == 0 {
-		http.Error(w, "баннер не найден", http.StatusNotFound)
-		return
-	}
-
-	jsonResponse, err := json.MarshalIndent(content, "", "\t")
-	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(jsonResponse)
 	if err != nil {
 		log.Println(err)

@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/RepinOleg/Banner_service/internal/model"
 	"github.com/RepinOleg/Banner_service/internal/response"
@@ -14,6 +16,27 @@ type Repository struct {
 
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
+}
+
+func (r *Repository) GetBanner(tagID, featureID int64, token string) (*model.BannerContent, error) {
+	var banner model.BannerContent
+	row := r.db.QueryRow("select content_title, content_text, content_url, is_active from banner b"+
+		" JOIN banner_tag bt ON b.banner_id=bt.banner_id"+
+		" WHERE feature_id = ($1) AND tag_id=($2) LIMIT 1;", featureID, tagID)
+
+	var isActive bool
+	if err := row.Scan(&banner.Title, &banner.Text, &banner.URL, &isActive); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, &response.NotFoundError{Message: "banner not found"}
+		}
+		return nil, err
+	}
+
+	if !isActive && token == "user_token" {
+		return nil, &response.AccessError{Message: "no access"}
+	}
+
+	return &banner, nil
 }
 
 func (r *Repository) GetAllBanners(tagID, featureID, limit, offset int64) ([]response.ModelResponse200, error) {
@@ -37,7 +60,7 @@ func (r *Repository) GetAllBanners(tagID, featureID, limit, offset int64) ([]res
 		args = append(args, featureID)
 	}
 
-	query += " ORDER BY b.created_at DESC LIMIT $1 OFFSET $2"
+	query += " ORDER BY b.banner_id LIMIT $1 OFFSET $2"
 
 	args = append(args, limit, offset)
 	rows, err := r.db.Query(query, args...)
@@ -57,28 +80,6 @@ func (r *Repository) GetAllBanners(tagID, featureID, limit, offset int64) ([]res
 		}
 		banner.TagIDs = tagIDs
 		banners = append(banners, banner)
-	}
-
-	return banners, nil
-}
-
-func (r *Repository) GetBanner(tagID, featureID int64, token string) ([]model.BannerContent, error) {
-	var banners []model.BannerContent
-	rows, err := r.db.Query("select content_title, content_text, content_url, is_active from banner b"+
-		" JOIN banner_tag bt ON b.banner_id=bt.banner_id"+
-		" WHERE feature_id = ($1) AND tag_id=($2);", featureID, tagID)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var banner model.BannerContent
-		var isActive bool
-		if err = rows.Scan(&banner.Title, &banner.Text, &banner.URL, &isActive); err != nil {
-			return nil, err
-		}
-		if token == "admin_token" || token == "user_token" && isActive {
-			banners = append(banners, banner)
-		}
 	}
 
 	return banners, nil
