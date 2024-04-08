@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/RepinOleg/Banner_service/internal/model"
 	"github.com/RepinOleg/Banner_service/internal/response"
 	"github.com/jmoiron/sqlx"
@@ -94,7 +95,7 @@ func (r *Repository) AddBanner(banner model.BannerBody) (int64, error) {
 	// Вставка в таблицу feature
 	_, err = tx.Exec("INSERT INTO feature (feature_id) VALUES ($1) ON CONFLICT DO NOTHING", banner.FeatureID)
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return 0, fmt.Errorf("error inserting to database feature: %s", err.Error())
 	}
 	// Вставка в таблицу banner с использованием RETURNING
@@ -102,7 +103,7 @@ func (r *Repository) AddBanner(banner model.BannerBody) (int64, error) {
 	err = tx.QueryRow("INSERT INTO banner (feature_id, content_title, content_text, content_url, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING banner_id",
 		banner.FeatureID, banner.Content.Title, banner.Content.Text, banner.Content.URL, banner.IsActive).Scan(&bannerID)
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return 0, fmt.Errorf("error inserting to database banner: %s", err.Error())
 	}
 
@@ -110,13 +111,13 @@ func (r *Repository) AddBanner(banner model.BannerBody) (int64, error) {
 	for _, tag := range banner.TagIDs {
 		_, err = tx.Exec("INSERT INTO tag (tag_id) VALUES ($1) ON CONFLICT DO NOTHING", tag)
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			return 0, fmt.Errorf("error inserting to database tag: %s", err.Error())
 		}
 		// Добавление в таблицу banner_tag
 		_, err = tx.Exec("INSERT INTO banner_tag (banner_id, tag_id) VALUES ($1, $2)", bannerID, tag)
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			return 0, fmt.Errorf("error inserting to database tag: %s", err.Error())
 		}
 	}
@@ -136,13 +137,13 @@ func (r *Repository) DeleteBanner(id int64) (bool, error) {
 
 	result, err := tx.Exec("DELETE FROM banner_tag WHERE banner_id = $1", id)
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return false, err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return false, err
 	}
 
@@ -153,13 +154,13 @@ func (r *Repository) DeleteBanner(id int64) (bool, error) {
 
 	result, err = tx.Exec("DELETE FROM banner WHERE banner_id = $1", id)
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return false, err
 	}
 
 	rowsAffected, err = result.RowsAffected()
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return false, err
 	}
 

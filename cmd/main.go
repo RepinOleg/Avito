@@ -1,14 +1,15 @@
 package main
 
 import (
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/RepinOleg/Banner_service/internal/handler"
 	"github.com/RepinOleg/Banner_service/internal/memorycache"
 	"github.com/RepinOleg/Banner_service/internal/repository"
 	sw "github.com/RepinOleg/Banner_service/internal/router"
 	_ "github.com/lib/pq"
-	"log"
-	"net/http"
-	"time"
 )
 
 func main() {

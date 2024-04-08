@@ -1,8 +1,9 @@
 package response
 
 import (
-	"github.com/RepinOleg/Banner_service/internal/model"
 	"time"
+
+	"github.com/RepinOleg/Banner_service/internal/model"
 )
 
 type ModelResponse200 struct {

@@ -1,10 +1,11 @@
 package router
 
 import (
-	"github.com/RepinOleg/Banner_service/internal/handler"
-	"github.com/RepinOleg/Banner_service/internal/middleware"
 	"net/http"
 	"strings"
+
+	"github.com/RepinOleg/Banner_service/internal/handler"
+	"github.com/RepinOleg/Banner_service/internal/middleware"
 
 	"github.com/gorilla/mux"
 )

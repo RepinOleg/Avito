@@ -44,10 +44,10 @@ func HandleError(w http.ResponseWriter, err error) {
 		return
 	}
 
-	HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+	HandleErrorJSON(w, err.Error(), http.StatusInternalServerError)
 }
 
-func HandleErrorJson(w http.ResponseWriter, errorMsg string, statusCode int) {
+func HandleErrorJSON(w http.ResponseWriter, errorMsg string, statusCode int) {
 	errorResponse := Error{Message: errorMsg}
 
 	errorJSON, _ := json.Marshal(errorResponse)

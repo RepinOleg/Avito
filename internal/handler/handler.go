@@ -3,16 +3,17 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/RepinOleg/Banner_service/internal/memorycache"
-	"github.com/RepinOleg/Banner_service/internal/model"
-	"github.com/RepinOleg/Banner_service/internal/repository"
-	"github.com/RepinOleg/Banner_service/internal/response"
-	"github.com/gorilla/mux"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/RepinOleg/Banner_service/internal/memorycache"
+	"github.com/RepinOleg/Banner_service/internal/model"
+	"github.com/RepinOleg/Banner_service/internal/repository"
+	"github.com/RepinOleg/Banner_service/internal/response"
+	"github.com/gorilla/mux"
 )
 
 type Handler struct {
@@ -37,14 +38,14 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	tagIDStr := r.FormValue("tag_id")
 	tagID, err := strconv.ParseInt(tagIDStr, 10, 64)
 	if err != nil {
-		response.HandleErrorJson(w, "wrong parameter tag_id or not found", http.StatusBadRequest)
+		response.HandleErrorJSON(w, "wrong parameter tag_id or not found", http.StatusBadRequest)
 		return
 	}
 
 	featureIDStr := r.FormValue("feature_id")
 	featureID, err := strconv.ParseInt(featureIDStr, 10, 64)
 	if err != nil {
-		response.HandleErrorJson(w, "Wrong parameter feature_id or not found", http.StatusBadRequest)
+		response.HandleErrorJSON(w, "Wrong parameter feature_id or not found", http.StatusBadRequest)
 		return
 	}
 
@@ -54,7 +55,7 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	}
 	lastVersion, err := strconv.ParseBool(lastVersionStr)
 	if err != nil {
-		response.HandleErrorJson(w, "Wrong parameter use_last_version", http.StatusBadRequest)
+		response.HandleErrorJSON(w, "Wrong parameter use_last_version", http.StatusBadRequest)
 		return
 	}
 
@@ -72,7 +73,7 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse, err := json.MarshalIndent(content, "", "\t")
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		response.HandleErrorJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -98,28 +99,28 @@ func (h *Handler) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 
 	tagID, err := getOptionalInt64(r.FormValue("tag_id"), 0)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		response.HandleErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	featureID, err := getOptionalInt64(r.FormValue("feature_id"), 0)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		response.HandleErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	limit, err := getOptionalInt64(r.FormValue("limit"), 10)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		response.HandleErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	offset, err := getOptionalInt64(r.FormValue("offset"), 0)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		response.HandleErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	banners, err := h.db.GetAllBanners(tagID, featureID, limit, offset)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		response.HandleErrorJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -130,7 +131,7 @@ func (h *Handler) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse, err := json.MarshalIndent(banners, "", "\t")
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		response.HandleErrorJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -154,13 +155,13 @@ func (h *Handler) DeleteBannerID(w http.ResponseWriter, r *http.Request) {
 	bannerIDStr := params["id"]
 	bannerID, err := strconv.ParseInt(bannerIDStr, 10, 64)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		response.HandleErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ok, err := h.db.DeleteBanner(bannerID)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		response.HandleErrorJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -183,18 +184,18 @@ func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
 	bannerIDStr := params["id"]
 	bannerID, err := strconv.ParseInt(bannerIDStr, 10, 64)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusBadRequest)
+		response.HandleErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	banner, err := readBody(r)
 	if err != nil {
-		response.HandleErrorJson(w, "Неккоректные данные", http.StatusBadRequest)
+		response.HandleErrorJSON(w, "Неккоректные данные", http.StatusBadRequest)
 		return
 	}
 
 	ok, err := h.db.PatchBanner(bannerID, banner)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		response.HandleErrorJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -220,20 +221,20 @@ func (h *Handler) PostBanner(w http.ResponseWriter, r *http.Request) {
 	}
 	banner, err := readBody(r)
 	if err != nil {
-		response.HandleErrorJson(w, "Неккоректные данные", http.StatusBadRequest)
+		response.HandleErrorJSON(w, "Неккоректные данные", http.StatusBadRequest)
 		return
 	}
 
 	bannerID, err := h.db.AddBanner(banner)
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		response.HandleErrorJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	response201 := response.ModelResponse201{BannerID: bannerID}
 	jsonResponse, err := json.MarshalIndent(response201, "", "\t")
 	if err != nil {
-		response.HandleErrorJson(w, err.Error(), http.StatusInternalServerError)
+		response.HandleErrorJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
