@@ -1,8 +1,18 @@
 version: "3"
 
 services:
+  banner-app:
+    build: ./
+    command: ./wait-for-postgres.sh my-postgres ./banner-app
+    container_name: banner-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      DB_PASSWORD: "12345"
   postgres:
-    image: postgres
+    image: postgres:latest
     container_name: my-postgres
     environment:
       POSTGRES_DB: "postgres"

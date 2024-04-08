@@ -15,7 +15,7 @@ type DBConfig struct {
 
 func LoadDBConfig() DBConfig {
 	return DBConfig{
-		Addr:     "localhost",
+		Addr:     "my-postgres",
 		Port:     5432,
 		User:     "admin",
 		Password: "12345",
