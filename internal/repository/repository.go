@@ -83,6 +83,10 @@ func (r *Repository) GetAllBanners(tagID, featureID, limit, offset int64) ([]res
 		banners = append(banners, banner)
 	}
 
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return banners, nil
 }
 
