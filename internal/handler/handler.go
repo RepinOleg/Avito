@@ -66,6 +66,7 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	} else {
 		content, err = h.cache.GetBanner(tagID, featureID, token)
 	}
+
 	if err != nil {
 		response.HandleError(w, err)
 		return
@@ -240,10 +241,8 @@ func (h *Handler) PostBanner(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusCreated)
 
-	// Добавление в кэш
-	h.cache.Set(bannerID, banner, time.Minute*5)
+	h.cache.SetBanner(bannerID, banner, time.Minute*5)
 
-	//отправка ответа
 	_, err = w.Write(jsonResponse)
 	if err != nil {
 		log.Println(err)

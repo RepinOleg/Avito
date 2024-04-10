@@ -1,7 +1,6 @@
 package memorycache
 
 import (
-	"errors"
 	"sync"
 	"time"
 
@@ -32,7 +31,7 @@ func New(defaultExpiration, cleanupInterval time.Duration) *Cache {
 	return &cache
 }
 
-func (c *Cache) Set(id int64, item model.BannerBody, duration time.Duration) {
+func (c *Cache) SetBanner(id int64, item model.BannerBody, duration time.Duration) {
 	var expiration int64
 
 	if duration == 0 {
@@ -77,21 +76,6 @@ func (c *Cache) GetBanner(tagID, featureID int64, token string) (*model.BannerCo
 	}
 
 	return nil, &response.NotFoundError{Message: "banner not found"}
-}
-
-func (c *Cache) Delete(id int64) error {
-
-	c.Lock()
-
-	defer c.Unlock()
-
-	if _, ok := c.banners[id]; !ok {
-		return errors.New("key not found")
-	}
-
-	delete(c.banners, id)
-
-	return nil
 }
 
 func (c *Cache) StartGC() {

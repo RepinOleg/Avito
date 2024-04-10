@@ -32,10 +32,6 @@ func NewDB(cfg DBConfig) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = connect.Ping()
-	if err != nil {
-		return nil, err
-	}
 
 	return connect, nil
 }
