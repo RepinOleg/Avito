@@ -1,4 +1,4 @@
-package memorycache
+package repository
 
 import (
 	"sync"
@@ -8,30 +8,30 @@ import (
 	"github.com/RepinOleg/Banner_service/internal/response"
 )
 
-type Cache struct {
+type MemoryCache struct {
 	sync.RWMutex
 	defaultExpiration time.Duration
 	cleanupInterval   time.Duration
 	banners           map[int64]model.BannerBody
 }
 
-func New(defaultExpiration, cleanupInterval time.Duration) *Cache {
+func New(defaultExpiration, cleanupInterval time.Duration) *MemoryCache {
 	items := make(map[int64]model.BannerBody)
 
-	cache := Cache{
+	cache := MemoryCache{
 		defaultExpiration: defaultExpiration,
 		cleanupInterval:   cleanupInterval,
 		banners:           items,
 	}
 
 	if cleanupInterval > 0 {
-		cache.StartGC() // данный метод рассматривается ниже
+		cache.StartGC()
 	}
 
 	return &cache
 }
 
-func (c *Cache) SetBanner(id int64, item model.BannerBody, duration time.Duration) {
+func (c *MemoryCache) AddBanner(id int64, item model.BannerBody, duration time.Duration) {
 	var expiration int64
 
 	if duration == 0 {
@@ -51,7 +51,7 @@ func (c *Cache) SetBanner(id int64, item model.BannerBody, duration time.Duratio
 	c.banners[id] = item
 }
 
-func (c *Cache) GetBanner(tagID, featureID int64, token string) (*model.BannerContent, error) {
+func (c *MemoryCache) GetBanner(tagID, featureID int64) (*model.BannerContent, error) {
 	c.RLock()
 
 	defer c.RUnlock()
@@ -65,10 +65,6 @@ func (c *Cache) GetBanner(tagID, featureID int64, token string) (*model.BannerCo
 				continue
 			}
 
-			if !banner.IsActive && token == "user_token" {
-				return nil, &response.AccessError{Message: "no access for user"}
-			}
-
 			if banner.Expiration < 0 || time.Now().UnixNano() < banner.Expiration {
 				return &banner.Content, nil
 			}
@@ -78,11 +74,11 @@ func (c *Cache) GetBanner(tagID, featureID int64, token string) (*model.BannerCo
 	return nil, &response.NotFoundError{Message: "banner not found"}
 }
 
-func (c *Cache) StartGC() {
+func (c *MemoryCache) StartGC() {
 	go c.GC()
 }
 
-func (c *Cache) GC() {
+func (c *MemoryCache) GC() {
 	for {
 		// ожидаем время установленное в cleanupInterval
 		<-time.After(c.cleanupInterval)
@@ -100,7 +96,7 @@ func (c *Cache) GC() {
 }
 
 // expiredKeys возвращает список "просроченных" ключей
-func (c *Cache) expiredKeys() (ids []int64) {
+func (c *MemoryCache) expiredKeys() (ids []int64) {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -113,7 +109,7 @@ func (c *Cache) expiredKeys() (ids []int64) {
 }
 
 // clearItems удаляет ключи из переданного списка
-func (c *Cache) clearItems(id []int64) {
+func (c *MemoryCache) clearItems(id []int64) {
 	c.Lock()
 	defer c.Unlock()
 
