@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/RepinOleg/Banner_service/internal/handler"
-	"github.com/RepinOleg/Banner_service/internal/memorycache"
 	"github.com/RepinOleg/Banner_service/internal/model"
 	"github.com/RepinOleg/Banner_service/internal/repository"
 	"github.com/jmoiron/sqlx"
@@ -20,7 +19,7 @@ type APITestSuite struct {
 	suite.Suite
 
 	handler *handler.Handler
-	cache   *memorycache.Cache
+	cache   *repository.Cache
 	repo    *repository.Repository
 }
 
@@ -41,7 +40,7 @@ func (s *APITestSuite) SetupSuite() {
 		s.FailNow("Failed to connect to postgres: ", err)
 	}
 
-	cache := memorycache.New(5*time.Minute, 10*time.Minute)
+	cache := repository.New(5*time.Minute, 10*time.Minute)
 	repo := repository.NewRepository(connect)
 	s.handler = handler.NewHandler(repo, cache)
 	s.cache = cache
