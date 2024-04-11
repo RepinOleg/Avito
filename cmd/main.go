@@ -3,30 +3,47 @@ package main
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/RepinOleg/Banner_service/internal/handler"
-	"github.com/RepinOleg/Banner_service/internal/memorycache"
 	"github.com/RepinOleg/Banner_service/internal/repository"
-	sw "github.com/RepinOleg/Banner_service/internal/router"
+	"github.com/RepinOleg/Banner_service/internal/service"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/spf13/viper"
 )
 
 func main() {
+	if err := initConfig(); err != nil {
+		log.Fatalf("error initializing config: %s", err.Error())
+	}
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("error loading env variables: %s", err.Error())
+	}
 	cfg := repository.LoadDBConfig()
 
 	connect, err := repository.NewDB(cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to initialize db: %s", err.Error())
 	}
 	defer connect.Close()
 
-	cache := memorycache.New(5*time.Minute, 10*time.Minute)
-	repo := repository.NewRepository(connect)
-	handlers := handler.NewHandler(repo, cache)
+	repos := repository.NewRepository(connect)
+	services := service.NewService(repos)
+	handlers := handler.NewHandler(services)
+	//cache := memorycache.New(5*time.Minute, 10*time.Minute)
+	//repo := repository.NewRepository(connect)
+	//handlers := handler.NewHandler(repo, cache)
 	log.Printf("Server started")
 
-	router := sw.NewRouter(handlers)
+	router := handler.NewRouter(handlers)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	if err = http.ListenAndServe(viper.GetString("port"), router); err != nil {
+		log.Fatalf("error occurred while running http server: %s", err.Error())
+	}
+}
+
+func initConfig() error {
+	viper.AddConfigPath("configs")
+	viper.SetConfigName("config")
+	return viper.ReadInConfig()
 }
