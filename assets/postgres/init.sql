@@ -25,3 +25,10 @@ CREATE TABLE banner_tag (
     FOREIGN KEY (banner_id) REFERENCES Banner(banner_id),
     FOREIGN KEY (tag_id) REFERENCES Tag(tag_id)
 );
+
+CREATE TABLE users
+(
+    id serial primary key,
+    username text not null unique,
+    password_hash text not null
+);
