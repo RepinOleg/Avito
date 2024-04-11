@@ -6,7 +6,7 @@ import (
 	"github.com/RepinOleg/Banner_service/internal/model"
 )
 
-type ModelResponse200 struct {
+type BannerResponse200 struct {
 	// Идентификатор баннера
 	BannerID int64 `json:"banner_id,omitempty"`
 	// Идентификаторы тэгов
