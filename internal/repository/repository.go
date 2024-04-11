@@ -36,5 +36,6 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
 		Banner:        NewBannerPostgres(db),
+		Cache:         NewCache(5*time.Minute, 10*time.Minute),
 	}
 }

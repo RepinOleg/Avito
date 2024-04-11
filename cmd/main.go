@@ -30,9 +30,7 @@ func main() {
 	repos := repository.NewRepository(connect)
 	services := service.NewService(repos)
 	handlers := handler.NewHandler(services)
-	//cache := memorycache.New(5*time.Minute, 10*time.Minute)
-	//repo := repository.NewRepository(connect)
-	//handlers := handler.NewHandler(repo, cache)
+
 	log.Printf("Server started")
 
 	router := handler.NewRouter(handlers)

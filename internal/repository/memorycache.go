@@ -15,7 +15,7 @@ type MemoryCache struct {
 	banners           map[int64]model.BannerBody
 }
 
-func New(defaultExpiration, cleanupInterval time.Duration) *MemoryCache {
+func NewCache(defaultExpiration, cleanupInterval time.Duration) *MemoryCache {
 	items := make(map[int64]model.BannerBody)
 
 	cache := MemoryCache{
