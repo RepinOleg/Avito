@@ -88,38 +88,36 @@ func (r *BannerPostgres) AddBanner(banner model.BannerBody) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	query := fmt.Sprintf("INSERT INTO %s (feature_id) VALUES ($1) ON CONFLICT DO NOTHING", featureTable)
 
-	// Вставка в таблицу feature
-	_, err = tx.Exec("INSERT INTO feature (feature_id) VALUES ($1) ON CONFLICT DO NOTHING", banner.FeatureID)
+	_, err = tx.Exec(query, banner.FeatureID)
 	if err != nil {
 		_ = tx.Rollback()
 		return 0, fmt.Errorf("error inserting to database feature: %s", err.Error())
 	}
-	// Вставка в таблицу banner с использованием RETURNING
+	query = fmt.Sprintf("INSERT INTO %s (feature_id, content_title, content_text, content_url, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING banner_id", bannerTable)
 	var bannerID int64
-	err = tx.QueryRow("INSERT INTO banner (feature_id, content_title, content_text, content_url, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING banner_id",
-		banner.FeatureID, banner.Content.Title, banner.Content.Text, banner.Content.URL, banner.IsActive).Scan(&bannerID)
+	err = tx.QueryRow(query, banner.FeatureID, banner.Content.Title, banner.Content.Text, banner.Content.URL, banner.IsActive).Scan(&bannerID)
 	if err != nil {
 		_ = tx.Rollback()
 		return 0, fmt.Errorf("error inserting to database banner: %s", err.Error())
 	}
 
-	// Вставка в таблицу Tag и BannerTag
 	for _, tag := range banner.TagIDs {
-		_, err = tx.Exec("INSERT INTO tag (tag_id) VALUES ($1) ON CONFLICT DO NOTHING", tag)
+		query = fmt.Sprintf("INSERT INTO %s (tag_id) VALUES ($1) ON CONFLICT DO NOTHING", tagTable)
+		_, err = tx.Exec(query, tag)
 		if err != nil {
 			_ = tx.Rollback()
 			return 0, fmt.Errorf("error inserting to database tag: %s", err.Error())
 		}
-		// Добавление в таблицу banner_tag
-		_, err = tx.Exec("INSERT INTO banner_tag (banner_id, tag_id) VALUES ($1, $2)", bannerID, tag)
+		query = fmt.Sprintf("INSERT INTO %s (banner_id, tag_id) VALUES ($1, $2)", tagBannerTable)
+		_, err = tx.Exec(query, bannerID, tag)
 		if err != nil {
 			_ = tx.Rollback()
 			return 0, fmt.Errorf("error inserting to database tag: %s", err.Error())
 		}
 	}
 
-	// Фиксация изменений в БД
 	if err = tx.Commit(); err != nil {
 		return 0, err
 	}
@@ -131,8 +129,8 @@ func (r *BannerPostgres) DeleteBanner(id int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
-	result, err := tx.Exec("DELETE FROM banner_tag WHERE banner_id = $1", id)
+	query := fmt.Sprintf("DELETE FROM %s WHERE banner_id = $1", tagBannerTable)
+	result, err := tx.Exec(query, id)
 	if err != nil {
 		_ = tx.Rollback()
 		return false, err
@@ -143,13 +141,8 @@ func (r *BannerPostgres) DeleteBanner(id int64) (bool, error) {
 		_ = tx.Rollback()
 		return false, err
 	}
-
-	deleted := false
-	if rowsAffected > 0 {
-		deleted = true
-	}
-
-	result, err = tx.Exec("DELETE FROM banner WHERE banner_id = $1", id)
+	query = fmt.Sprintf("DELETE FROM %s WHERE banner_id = $1", bannerTable)
+	result, err = tx.Exec(query, id)
 	if err != nil {
 		_ = tx.Rollback()
 		return false, err
@@ -161,6 +154,7 @@ func (r *BannerPostgres) DeleteBanner(id int64) (bool, error) {
 		return false, err
 	}
 
+	var deleted = false
 	if rowsAffected > 0 {
 		deleted = true
 	}
@@ -178,11 +172,8 @@ func (r *BannerPostgres) PatchBanner(id int64, banner model.BannerBody) (bool, e
 		content = banner.Content
 		updated bool
 	)
-
-	result, err := r.db.Exec("UPDATE banner "+
-		"SET content_title=$1, content_text=$2, content_url=$3, updated_at=CURRENT_TIMESTAMP "+
-		"WHERE banner_id = $4",
-		content.Title, content.Text, content.URL, id)
+	query := fmt.Sprintf("UPDATE %s SET content_title=$1, content_text=$2, content_url=$3, updated_at=CURRENT_TIMESTAMP WHERE banner_id = $4", bannerTable)
+	result, err := r.db.Exec(query, content.Title, content.Text, content.URL, id)
 	if err != nil {
 		return false, err
 	}
