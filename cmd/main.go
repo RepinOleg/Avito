@@ -31,10 +31,8 @@ func main() {
 	services := service.NewService(repos)
 	handlers := handler.NewHandler(services)
 
-	log.Printf("Server started")
-
 	router := handler.NewRouter(handlers)
-
+	log.Printf("Server started")
 	if err = http.ListenAndServe(viper.GetString("port"), router); err != nil {
 		log.Fatalf("error occurred while running http server: %s", err.Error())
 	}

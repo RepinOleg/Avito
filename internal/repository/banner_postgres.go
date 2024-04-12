@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/RepinOleg/Banner_service/internal/model"
 	"github.com/RepinOleg/Banner_service/internal/response"
@@ -39,22 +40,23 @@ func (r *BannerPostgres) GetBanner(tagID, featureID int64) (*model.BannerContent
 func (r *BannerPostgres) GetAllBanners(tagID, featureID, limit, offset int64) ([]response.BannerResponse200, error) {
 	var banners []response.BannerResponse200
 	query := fmt.Sprintf("SELECT b.banner_id, b.feature_id, b.content_title, b.content_text, b.content_url, b.is_active, b.created_at, b.updated_at, ARRAY_AGG(bt.tag_id) AS tag_ids "+
-		"FROM %s b LEFT JOIN %s bt ON b.banner_id = bt.banner_id "+
-		"WHERE 1=1 GROUP BY b.banner_id", bannerTable, tagBannerTable)
+		"FROM %s b LEFT JOIN %s bt ON b.banner_id = bt.banner_id WHERE 1=1", bannerTable, tagBannerTable)
 
 	var args []interface{}
-
+	var amount int
 	if tagID != 0 {
-		query += " AND bt.tag_id IN (?)"
+		query += " AND bt.tag_id = $1"
 		args = append(args, tagID)
+		amount++
 	}
 
 	if featureID != 0 {
-		query += " AND b.feature_id = ?"
+		query += " AND b.feature_id = $" + strconv.Itoa(amount+1)
 		args = append(args, featureID)
+		amount++
 	}
 
-	query += " ORDER BY b.banner_id LIMIT $1 OFFSET $2"
+	query += " GROUP BY b.banner_id ORDER BY b.banner_id LIMIT $" + strconv.Itoa(amount+1) + " OFFSET $" + strconv.Itoa(amount+2)
 
 	args = append(args, limit, offset)
 	rows, err := r.db.Query(query, args...)
@@ -129,7 +131,15 @@ func (r *BannerPostgres) DeleteBanner(id int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	query := fmt.Sprintf("DELETE FROM %s WHERE banner_id = $1", tagBannerTable)
+	_, err = tx.Exec(query, id)
+	if err != nil {
+		_ = tx.Rollback()
+		return false, err
+	}
+
+	query = fmt.Sprintf("DELETE FROM %s WHERE banner_id = $1", bannerTable)
 	result, err := tx.Exec(query, id)
 	if err != nil {
 		_ = tx.Rollback()
@@ -141,22 +151,62 @@ func (r *BannerPostgres) DeleteBanner(id int64) (bool, error) {
 		_ = tx.Rollback()
 		return false, err
 	}
-	query = fmt.Sprintf("DELETE FROM %s WHERE banner_id = $1", bannerTable)
-	result, err = tx.Exec(query, id)
-	if err != nil {
-		_ = tx.Rollback()
-		return false, err
-	}
-
-	rowsAffected, err = result.RowsAffected()
-	if err != nil {
-		_ = tx.Rollback()
-		return false, err
-	}
 
 	var deleted = false
 	if rowsAffected > 0 {
 		deleted = true
+	}
+
+	query = fmt.Sprintf("SELECT t.tag_id FROM %s t LEFT JOIN %s bt ON t.tag_id = bt.tag_id WHERE bt.tag_id IS NULL", tagTable, tagBannerTable)
+	rows, err := tx.Query(query)
+	if err != nil {
+		_ = tx.Rollback()
+		return false, err
+	}
+
+	var unusedTags []int64
+	for rows.Next() {
+		var tagID int64
+		if err = rows.Scan(&tagID); err != nil {
+			_ = tx.Rollback()
+			return false, err
+		}
+		unusedTags = append(unusedTags, tagID)
+	}
+
+	for _, tagID := range unusedTags {
+		query = fmt.Sprintf("DELETE FROM %s WHERE tag_id = $1", tagTable)
+		_, err = tx.Exec(query, tagID)
+		if err != nil {
+			_ = tx.Rollback()
+			return false, err
+		}
+	}
+
+	query = fmt.Sprintf("SELECT f.feature_id FROM %s f LEFT JOIN %s b ON f.feature_id = b.feature_id WHERE b.feature_id IS NULL", featureTable, bannerTable)
+	rows, err = tx.Query(query)
+	if err != nil {
+		_ = tx.Rollback()
+		return false, err
+	}
+
+	var unusedFeatures []int64
+	for rows.Next() {
+		var featureID int64
+		if err = rows.Scan(&featureID); err != nil {
+			_ = tx.Rollback()
+			return false, err
+		}
+		unusedFeatures = append(unusedFeatures, featureID)
+	}
+
+	for _, featureID := range unusedFeatures {
+		query = fmt.Sprintf("DELETE FROM %s WHERE feature_id = $1", featureTable)
+		_, err = tx.Exec(query, featureID)
+		if err != nil {
+			_ = tx.Rollback()
+			return false, err
+		}
 	}
 
 	err = tx.Commit()
