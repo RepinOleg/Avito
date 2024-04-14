@@ -1,10 +1,11 @@
 package repository
 
 import (
-	"github.com/RepinOleg/Banner_service/internal/model"
-	"github.com/RepinOleg/Banner_service/internal/response"
 	"sync"
 	"time"
+
+	"github.com/RepinOleg/Banner_service/internal/model"
+	"github.com/RepinOleg/Banner_service/internal/response"
 )
 
 type MemoryCache struct {
