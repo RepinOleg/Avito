@@ -87,6 +87,7 @@ func (c *MemoryCache) GC() {
 
 		if keys := c.expiredKeys(); len(keys) != 0 {
 			c.clearItems(keys)
+
 		}
 	}
 }

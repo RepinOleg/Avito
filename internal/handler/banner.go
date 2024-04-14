@@ -15,10 +15,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const (
-	minutesToCacheExpiration = 5
-)
-
 func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 	tagIDStr := r.FormValue("tag_id")
 	tagID, err := strconv.ParseInt(tagIDStr, 10, 64)
@@ -93,6 +89,7 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetAllBanners(w http.ResponseWriter, r *http.Request) {
+
 	tagID, err := getOptionalInt64(r.FormValue("tag_id"), 0)
 	if err != nil {
 		response.HandleErrorJSON(w, err.Error(), http.StatusBadRequest)
@@ -137,6 +134,7 @@ func (h *Handler) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+
 }
 
 func (h *Handler) DeleteBannerID(w http.ResponseWriter, r *http.Request) {
@@ -193,6 +191,7 @@ func (h *Handler) PatchBannerID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PostBanner(w http.ResponseWriter, r *http.Request) {
+
 	banner, err := readBody(r)
 	if err != nil {
 		response.HandleErrorJSON(w, "Неккоректные данные", http.StatusBadRequest)
@@ -214,7 +213,7 @@ func (h *Handler) PostBanner(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusCreated)
 
-	h.services.Cache.Create(bannerID, banner, time.Minute*minutesToCacheExpiration)
+	h.services.Cache.Create(bannerID, banner, time.Minute*5)
 
 	_, err = w.Write(jsonResponse)
 	if err != nil {
@@ -243,6 +242,7 @@ func getOptionalInt64(value string, defaultValue int64) (int64, error) {
 	}
 
 	num, err := strconv.ParseInt(value, 10, 64)
+
 	if err != nil {
 		return 0, err
 	}
