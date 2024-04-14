@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"strings"
@@ -9,10 +8,6 @@ import (
 
 	"github.com/RepinOleg/Banner_service/internal/response"
 )
-
-type key string
-
-const userIDKey key = "UserID"
 
 func Logger(inner http.Handler, name string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -49,15 +44,11 @@ func (h *Handler) TokenValidationMiddleware(next http.Handler, handlerName strin
 			adminFlag = true
 		}
 
-		userID, err := h.services.Authorization.ParseToken(headerParts[1], adminFlag)
+		_, err := h.services.Authorization.ParseToken(headerParts[1], adminFlag)
 		if err != nil {
 			response.HandleError(w, err)
 			return
 		}
-
-		ctx := context.WithValue(r.Context(), userIDKey, userID)
-
-		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
 	})
