@@ -9,6 +9,10 @@ import (
 	"github.com/RepinOleg/Banner_service/internal/response"
 )
 
+const (
+	tokenParts = 2
+)
+
 func Logger(inner http.Handler, name string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -34,7 +38,7 @@ func (h *Handler) TokenValidationMiddleware(next http.Handler, handlerName strin
 		}
 
 		headerParts := strings.Split(header, " ")
-		if len(headerParts) != 2 {
+		if len(headerParts) != tokenParts {
 			http.Error(w, "пользователь не авторизован", http.StatusUnauthorized)
 			return
 		}

@@ -66,7 +66,6 @@ func NewRouter(handlers *Handler) *mux.Router {
 }
 
 var routes = Routes{
-
 	Route{
 		"GetAllBanners",
 		strings.ToUpper("Get"),
