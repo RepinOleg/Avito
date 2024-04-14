@@ -1,11 +1,10 @@
 package repository
 
 import (
-	"sync"
-	"time"
-
 	"github.com/RepinOleg/Banner_service/internal/model"
 	"github.com/RepinOleg/Banner_service/internal/response"
+	"sync"
+	"time"
 )
 
 type MemoryCache struct {
@@ -38,7 +37,6 @@ func (c *MemoryCache) AddBanner(id int64, item model.BannerBody, duration time.D
 		duration = c.defaultExpiration
 	}
 
-	// Устанавливаем время истечения кеша
 	if duration > 0 {
 		expiration = time.Now().Add(duration).UnixNano()
 	}
@@ -80,14 +78,12 @@ func (c *MemoryCache) StartGC() {
 
 func (c *MemoryCache) GC() {
 	for {
-		// ожидаем время установленное в cleanupInterval
 		<-time.After(c.cleanupInterval)
 
 		if c.banners == nil {
 			return
 		}
 
-		// Ищем элементы с истекшим временем жизни и удаляем из хранилища
 		if keys := c.expiredKeys(); len(keys) != 0 {
 			c.clearItems(keys)
 
@@ -95,7 +91,6 @@ func (c *MemoryCache) GC() {
 	}
 }
 
-// expiredKeys возвращает список "просроченных" ключей
 func (c *MemoryCache) expiredKeys() (ids []int64) {
 	c.RLock()
 	defer c.RUnlock()
@@ -108,7 +103,6 @@ func (c *MemoryCache) expiredKeys() (ids []int64) {
 	return
 }
 
-// clearItems удаляет ключи из переданного списка
 func (c *MemoryCache) clearItems(id []int64) {
 	c.Lock()
 	defer c.Unlock()

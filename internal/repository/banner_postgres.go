@@ -152,61 +152,20 @@ func (r *BannerPostgres) DeleteBanner(id int64) (bool, error) {
 		return false, err
 	}
 
-	var deleted = false
-	if rowsAffected > 0 {
-		deleted = true
-	}
+	deleted := rowsAffected > 0
 
-	query = fmt.Sprintf("SELECT t.tag_id FROM %s t LEFT JOIN %s bt ON t.tag_id = bt.tag_id WHERE bt.tag_id IS NULL", tagTable, tagBannerTable)
-	rows, err := tx.Query(query)
+	query = fmt.Sprintf("DELETE FROM %s WHERE tag_id IN (SELECT t.tag_id FROM %s t LEFT JOIN %s bt ON t.tag_id = bt.tag_id WHERE bt.tag_id IS NULL)", tagTable, tagTable, tagBannerTable)
+	_, err = tx.Exec(query)
 	if err != nil {
 		_ = tx.Rollback()
 		return false, err
 	}
 
-	var unusedTags []int64
-	for rows.Next() {
-		var tagID int64
-		if err = rows.Scan(&tagID); err != nil {
-			_ = tx.Rollback()
-			return false, err
-		}
-		unusedTags = append(unusedTags, tagID)
-	}
-
-	for _, tagID := range unusedTags {
-		query = fmt.Sprintf("DELETE FROM %s WHERE tag_id = $1", tagTable)
-		_, err = tx.Exec(query, tagID)
-		if err != nil {
-			_ = tx.Rollback()
-			return false, err
-		}
-	}
-
-	query = fmt.Sprintf("SELECT f.feature_id FROM %s f LEFT JOIN %s b ON f.feature_id = b.feature_id WHERE b.feature_id IS NULL", featureTable, bannerTable)
-	rows, err = tx.Query(query)
+	query = fmt.Sprintf("DELETE FROM %s WHERE feature_id IN (SELECT f.feature_id FROM %s f LEFT JOIN %s b ON f.feature_id = b.feature_id WHERE b.feature_id IS NULL)", featureTable, featureTable, bannerTable)
+	_, err = tx.Exec(query)
 	if err != nil {
 		_ = tx.Rollback()
 		return false, err
-	}
-
-	var unusedFeatures []int64
-	for rows.Next() {
-		var featureID int64
-		if err = rows.Scan(&featureID); err != nil {
-			_ = tx.Rollback()
-			return false, err
-		}
-		unusedFeatures = append(unusedFeatures, featureID)
-	}
-
-	for _, featureID := range unusedFeatures {
-		query = fmt.Sprintf("DELETE FROM %s WHERE feature_id = $1", featureTable)
-		_, err = tx.Exec(query, featureID)
-		if err != nil {
-			_ = tx.Rollback()
-			return false, err
-		}
 	}
 
 	err = tx.Commit()
