@@ -20,7 +20,7 @@ func NewBannerPostgres(db *sqlx.DB) *BannerPostgres {
 	return &BannerPostgres{db: db}
 }
 
-func (r *BannerPostgres) GetBanner(tagID, featureID int64) (*model.BannerContent, error) {
+func (r *BannerPostgres) GetBanner(tagID, featureID int64) (*model.BannerContent, bool, error) {
 	var banner model.BannerContent
 	query := fmt.Sprintf("SELECT content_title, content_text, content_url, is_active from %s b"+
 		" JOIN %s bt ON b.banner_id=bt.banner_id WHERE feature_id = ($1) AND tag_id=($2) LIMIT 1;", bannerTable, tagBannerTable)
@@ -29,12 +29,12 @@ func (r *BannerPostgres) GetBanner(tagID, featureID int64) (*model.BannerContent
 	var isActive bool
 	if err := row.Scan(&banner.Title, &banner.Text, &banner.URL, &isActive); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, &response.NotFoundError{Message: "banner not found"}
+			return nil, false, &response.NotFoundError{Message: "banner not found"}
 		}
-		return nil, err
+		return nil, false, err
 	}
 
-	return &banner, nil
+	return &banner, isActive, nil
 }
 
 func (r *BannerPostgres) GetAllBanners(tagID, featureID, limit, offset int64) ([]response.BannerResponse200, error) {

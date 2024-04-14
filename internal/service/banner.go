@@ -7,10 +7,10 @@ import (
 )
 
 type BannerService struct {
-	repo repository.Banner
+	repo repository.BannerDB
 }
 
-func NewBannerService(repo repository.Banner) *BannerService {
+func NewBannerService(repo repository.BannerDB) *BannerService {
 	return &BannerService{repo: repo}
 }
 
@@ -20,7 +20,7 @@ func (s *BannerService) Create(banner model.BannerBody) (int64, error) {
 func (s *BannerService) GetAll(tagID, featureID, limit, offset int64) ([]response.BannerResponse200, error) {
 	return s.repo.GetAllBanners(tagID, featureID, limit, offset)
 }
-func (s *BannerService) Get(tagID, featureID int64) (*model.BannerContent, error) {
+func (s *BannerService) Get(tagID, featureID int64) (*model.BannerContent, bool, error) {
 	return s.repo.GetBanner(tagID, featureID)
 }
 func (s *BannerService) Delete(id int64) (bool, error) {

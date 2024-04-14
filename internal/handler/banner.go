@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RepinOleg/Banner_service/internal/model"
@@ -39,12 +40,33 @@ func (h *Handler) GetUserBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var content *model.BannerContent
+	var (
+		content  *model.BannerContent
+		isActive bool
+	)
 
 	if lastVersion {
-		content, err = h.services.Banner.Get(tagID, featureID)
+		content, isActive, err = h.services.Banner.Get(tagID, featureID)
 	} else {
-		content, err = h.services.Cache.Get(tagID, featureID)
+		content, isActive, err = h.services.Cache.Get(tagID, featureID)
+	}
+	if err != nil {
+		response.HandleError(w, err)
+		return
+	}
+
+	header := r.Header.Get("token")
+	if header == "" {
+		http.Error(w, "пользователь не авторизован", http.StatusUnauthorized)
+		return
+	}
+	if !isActive {
+		headerParts := strings.Split(header, " ")
+		_, err = h.services.Authorization.ParseToken(headerParts[1], true)
+		if err != nil {
+			response.HandleError(w, err)
+			return
+		}
 	}
 
 	if err != nil {

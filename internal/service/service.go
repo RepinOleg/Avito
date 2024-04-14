@@ -17,14 +17,14 @@ type Authorization interface {
 type Banner interface {
 	Create(banner model.BannerBody) (int64, error)
 	GetAll(tagID, featureID, limit, offset int64) ([]response.BannerResponse200, error)
-	Get(tagID, featureID int64) (*model.BannerContent, error)
+	Get(tagID, featureID int64) (*model.BannerContent, bool, error)
 	Delete(id int64) (bool, error)
 	Update(id int64, newBanner model.BannerBody) (bool, error)
 }
 
 type Cache interface {
 	Create(id int64, banner model.BannerBody, duration time.Duration)
-	Get(tagID, featureID int64) (*model.BannerContent, error)
+	Get(tagID, featureID int64) (*model.BannerContent, bool, error)
 }
 
 type Service struct {
@@ -36,7 +36,7 @@ type Service struct {
 func NewService(repos *repository.Repository) *Service {
 	return &Service{
 		Authorization: NewAuthService(repos.Authorization),
-		Banner:        NewBannerService(repos.Banner),
+		Banner:        NewBannerService(repos.BannerDB),
 		Cache:         NewCacheService(repos.Cache),
 	}
 }

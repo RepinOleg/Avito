@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"github.com/RepinOleg/Banner_service/internal/service"
 	"os"
 	"strconv"
 	"testing"
@@ -17,15 +18,15 @@ import (
 
 type APITestSuite struct {
 	suite.Suite
-
 	handler *handler.Handler
-	cache   *repository.Cache
 	repo    *repository.Repository
+	service *service.Service
+	token   string
 }
 
 func (s *APITestSuite) SetupSuite() {
 	cfg := repository.DBConfig{
-		Addr:     "localhost",
+		Host:     "localhost",
 		Port:     5432,
 		User:     "test",
 		Password: "test",
@@ -33,17 +34,18 @@ func (s *APITestSuite) SetupSuite() {
 	}
 
 	dataSource := fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=disable",
-		cfg.User, cfg.Password, cfg.Addr, cfg.Port, cfg.DB)
+		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DB)
 
 	connect, err := sqlx.Connect("postgres", dataSource)
 	if err != nil {
 		s.FailNow("Failed to connect to postgres: ", err)
 	}
 
-	cache := repository.New(5*time.Minute, 10*time.Minute)
 	repo := repository.NewRepository(connect)
-	s.handler = handler.NewHandler(repo, cache)
-	s.cache = cache
+	services := service.NewService(repo)
+	handlers := handler.NewHandler(services)
+	s.handler = handlers
+	s.service = services
 	s.repo = repo
 
 	if err = s.populateDB(); err != nil {
@@ -51,6 +53,7 @@ func (s *APITestSuite) SetupSuite() {
 	}
 
 	s.populateCache()
+	s.token = s.createToken()
 }
 
 func TestAPISuite(t *testing.T) {
@@ -78,7 +81,12 @@ func (s *APITestSuite) populateDB() error {
 			UpdatedAt:  time.Now(),
 			Expiration: 0,
 		}
+
 		_, err := s.repo.AddBanner(banner)
+		if err != nil {
+			return err
+		}
+		_, err = s.repo.AddBanner(banner)
 		if err != nil {
 			return err
 		}
@@ -103,7 +111,24 @@ func (s *APITestSuite) populateCache() {
 			UpdatedAt:  time.Now(),
 			Expiration: 0,
 		}
-		s.cache.SetBanner(i, banner, time.Minute*5)
+
+		s.repo.Cache.SetBanner(i, banner, time.Minute*5)
 		active = !active
 	}
+}
+
+func (s *APITestSuite) createToken() string {
+	user := model.User{
+		Username: "test2",
+		Password: "test2",
+	}
+	_, err := s.service.Authorization.CreateUser(user)
+	if err != nil {
+		s.FailNow("register failed", err.Error())
+	}
+	token, err := s.service.Authorization.GenerateToken(user.Username, user.Password, "user")
+	if err != nil {
+		s.FailNow("Authorization failed", err.Error())
+	}
+	return token
 }

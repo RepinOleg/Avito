@@ -15,9 +15,9 @@ type BannerBody struct {
 	// Флаг активности баннера
 	IsActive bool `json:"is_active,omitempty"`
 
-	CreatedAt time.Time
+	CreatedAt time.Time `json:"created_at"`
 
-	UpdatedAt time.Time
+	UpdatedAt time.Time `json:"updated_at"`
 
 	Expiration int64
 }

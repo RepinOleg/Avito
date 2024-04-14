@@ -30,7 +30,7 @@ func NewCache(defaultExpiration, cleanupInterval time.Duration) *MemoryCache {
 	return &cache
 }
 
-func (c *MemoryCache) AddBanner(id int64, item model.BannerBody, duration time.Duration) {
+func (c *MemoryCache) SetBanner(featureID int64, item model.BannerBody, duration time.Duration) {
 	var expiration int64
 
 	if duration == 0 {
@@ -46,10 +46,10 @@ func (c *MemoryCache) AddBanner(id int64, item model.BannerBody, duration time.D
 	defer c.Unlock()
 	item.CreatedAt = time.Now()
 	item.Expiration = expiration
-	c.banners[id] = item
+	c.banners[featureID] = item
 }
 
-func (c *MemoryCache) GetBanner(tagID, featureID int64) (*model.BannerContent, error) {
+func (c *MemoryCache) GetBanner(tagID, featureID int64) (*model.BannerContent, bool, error) {
 	c.RLock()
 
 	defer c.RUnlock()
@@ -64,12 +64,12 @@ func (c *MemoryCache) GetBanner(tagID, featureID int64) (*model.BannerContent, e
 			}
 
 			if banner.Expiration < 0 || time.Now().UnixNano() < banner.Expiration {
-				return &banner.Content, nil
+				return &banner.Content, banner.IsActive, nil
 			}
 		}
 	}
 
-	return nil, &response.NotFoundError{Message: "banner not found"}
+	return nil, false, &response.NotFoundError{Message: "banner not found"}
 }
 
 func (c *MemoryCache) StartGC() {

@@ -13,8 +13,8 @@ type Authorization interface {
 	GetUser(username, password string) (model.User, error)
 }
 
-type Banner interface {
-	GetBanner(tagID, featureID int64) (*model.BannerContent, error)
+type BannerDB interface {
+	GetBanner(tagID, featureID int64) (*model.BannerContent, bool, error)
 	GetAllBanners(tagID, featureID, limit, offset int64) ([]response.BannerResponse200, error)
 	AddBanner(banner model.BannerBody) (int64, error)
 	DeleteBanner(id int64) (bool, error)
@@ -22,20 +22,20 @@ type Banner interface {
 }
 
 type Cache interface {
-	AddBanner(id int64, item model.BannerBody, duration time.Duration)
-	GetBanner(tagID, featureID int64) (*model.BannerContent, error)
+	SetBanner(id int64, item model.BannerBody, duration time.Duration)
+	GetBanner(tagID, featureID int64) (*model.BannerContent, bool, error)
 }
 
 type Repository struct {
 	Authorization
-	Banner
+	BannerDB
 	Cache
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
-		Banner:        NewBannerPostgres(db),
+		BannerDB:      NewBannerPostgres(db),
 		Cache:         NewCache(5*time.Minute, 10*time.Minute),
 	}
 }

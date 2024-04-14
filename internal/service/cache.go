@@ -16,8 +16,8 @@ func NewCacheService(cache repository.Cache) *CacheService {
 }
 
 func (s *CacheService) Create(id int64, banner model.BannerBody, duration time.Duration) {
-	s.cache.AddBanner(id, banner, duration)
+	s.cache.SetBanner(id, banner, duration)
 }
-func (s *CacheService) Get(tagID, featureID int64) (*model.BannerContent, error) {
+func (s *CacheService) Get(tagID, featureID int64) (*model.BannerContent, bool, error) {
 	return s.cache.GetBanner(tagID, featureID)
 }
