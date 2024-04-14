@@ -19,8 +19,8 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("error loading env variables: %s", err.Error())
 	}
-	cfg := repository.LoadDBConfig()
 
+	cfg := repository.LoadDBConfig()
 	connect, err := repository.NewDB(cfg)
 	if err != nil {
 		log.Fatalf("failed to initialize db: %s", err.Error())
